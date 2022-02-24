@@ -125,13 +125,10 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
     mapping(address => bool) public preSaleAddresses;
 
     constructor(
-        string memory _name,
-        string memory _symbol,
-        string memory _initBaseURI,
-        string memory _initNotRevealedUri
-    ) ERC721(_name, _symbol) {
-        setBaseURI(_initBaseURI);
-        setNotRevealedURI(_initNotRevealedUri);
+       
+    ) ERC721("_name", "_symbol") {
+        setBaseURI("_initBaseURI");
+        setNotRevealedURI("_initNotRevealedUri");
     }
 
     /*
