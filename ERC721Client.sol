@@ -112,12 +112,10 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
     //bool public revealed = false;
     bool public paused = true;
     bool public lotteryActive = false;
-    bool public airDropActive = false;
     bool public pollState = false;
     bool public live = false;
 
     uint256[] public lotteryDates;
-    address[] private airDropAddresses;
     string[] public pollOptions;
 
     mapping(string => bool) pollOptionsMap;
@@ -146,10 +144,7 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
     @description - Gets the current base URI for nft metadata
     @returns <string>
   */
-    function _baseURI() internal view virtual override returns (string memory) {
-        return baseURI;
-    }
-
+   
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -600,26 +595,59 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
         lotteryIntervalDays = noDays;
     }
 
-    /*
-    @function airDrop(to, amount)
-    @description - Air drop an nft to address
-    @param <address> to - The address to airdrop nft
-    */
-     function airDrop(address to, uint256 tokenId ) public onlyOwner {
-        require(airDropActive, "ERROR: Air drop is not active");
-        airDropAddresses.push(to);
+     
+    ///////////////////////////////////
+    //       AIRDROP CODE STARTS     //
+    ///////////////////////////////////
 
-        _safeMint(to, tokenId);
-        addressMints[to]++;
+    // Send NFTs to a list of addresses
+    function giftNftToList(address[] calldata _sendNftsTo)
+        external
+        onlyOwner
+        tokensAvailable(_sendNftsTo.length)
+    {
+        for (uint256 i = 0; i < _sendNftsTo.length; i++)
+            {_safeMint(_sendNftsTo[i], totalSupply());
+            addressMints[_sendNftsTo[i]]++;}
+    }
+
+    // Send NFTs to a single address
+    function giftNftToAddress(address _sendNftsTo, uint256 _howMany)
+        external
+        onlyOwner
+        tokensAvailable(_howMany)
+    {
+        for (uint256 i = 0; i < _howMany; i++)
+           {_safeMint(_sendNftsTo, totalSupply());
+             addressMints[_sendNftsTo]++;} 
+    }
+
+    
+    ///////////////////
+    // Query Method  //
+    ///////////////////
+
+    function tokensRemaining() public view returns (uint256) {
+        return maxSupply - totalSupply() - 100; // reserve 100 mints for the team
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
+    }
+
+    ///////////////////
+    //  Helper Code  //
+    ///////////////////
+
+    modifier tokensAvailable(uint256 _howMany) {
+        require(_howMany <= tokensRemaining(), "Try minting less tokens");
+        _;
     }
     /*
     @function setAirDropStatus(value)
     @description - Sets the status of airdrop to true/false
     @param <bool> value - true/false
     */
-    function setAirDropStatus(bool value) public onlyOwner {
-        airDropActive = value;
-    }
 
     /*
     @function castVote(value)
