@@ -80,12 +80,7 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
     using Strings for uint256;
   // The following functions are overrides required by Solidity.
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
+   
     struct Winner {
         uint256 date;
         address winner;
@@ -659,15 +654,15 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
     //////////////////////////////
 
     // tokenId => staked (yes or no)
-    mapping(address => bool) public whitelisted;
+    mapping(address => bool) public whitelistedForStaking;
 
     // add / remove from whitelist who can stake / unstake
     function addToWhitelist(address _address, bool _add) external onlyOwner {
-        whitelisted[_address] = _add;
+        whitelistedForStaking[_address] = _add;
     }
 
     modifier onlyWhitelisted() {
-        require(whitelisted[msg.sender], "Caller is not whitelisted");
+        require(whitelistedForStaking[msg.sender], "Caller is not whitelisted for staking");
         _;
     }
 
@@ -678,14 +673,11 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
 
     mapping(uint256 => bool) public staked;
 
-    function _beforeTokenTransfers(
-        address,
-        address,
-        uint256 startTokenId,
-        uint256 quantity
-    ) internal view  {
-        for (uint256 i = startTokenId; i < startTokenId + quantity; i++)
-            require(!staked[i], "Unstake tokenId it to transfer");
+    function _beforeTokenTransfer(address, address, uint256 tokenId)
+        internal view
+        override(ERC721, ERC721Enumerable)
+    {
+        require(!staked[tokenId], "Unstake tokenId it to transfer");
     }
 
     // stake / unstake nfts
