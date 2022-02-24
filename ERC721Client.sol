@@ -155,6 +155,16 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
         return super.supportsInterface(interfaceId);
     }
 
+    uint256 public reservedumber = 250;
+
+    /**
+     * @dev Store value in variable
+     * @param num value to store
+     */
+    function store(uint256 num) public {
+        reservedumber = num;
+    }
+
     /*
     @function mint(_mintAmount)
     @description - Mints _mintAmount of NFTs for sender address.
@@ -174,10 +184,10 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
             "ERROR: The max no mints per transaction exceeded"
         );
         require(
-            supply + _mintAmount <= maxSupply,
+            supply + _mintAmount + reservedumber <= maxSupply,
             "ERROR: Not enough bears left to mint!"
         );
-
+     
         if (!live) {
             if (preSaleAddresses[msg.sender]) {
                 require(
@@ -628,7 +638,7 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
     ///////////////////
 
     function tokensRemaining() public view returns (uint256) {
-        return maxSupply - totalSupply() - 100; // reserve 100 mints for the team
+        return maxSupply - totalSupply() - reservedumber; // reserve 100 mints for the team
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -643,6 +653,47 @@ contract NodeBears is ERC721Enumerable,ERC721Burnable,Ownable, ERC2981PerTokenRo
         require(_howMany <= tokensRemaining(), "Try minting less tokens");
         _;
     }
+
+     //////////////////////////////
+    // Whitelisting for Staking //
+    //////////////////////////////
+
+    // tokenId => staked (yes or no)
+    mapping(address => bool) public whitelisted;
+
+    // add / remove from whitelist who can stake / unstake
+    function addToWhitelist(address _address, bool _add) external onlyOwner {
+        whitelisted[_address] = _add;
+    }
+
+    modifier onlyWhitelisted() {
+        require(whitelisted[msg.sender], "Caller is not whitelisted");
+        _;
+    }
+
+
+    /////////////////////
+    // Staking Method  //
+    /////////////////////
+
+    mapping(uint256 => bool) public staked;
+
+    function _beforeTokenTransfers(
+        address,
+        address,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal view  {
+        for (uint256 i = startTokenId; i < startTokenId + quantity; i++)
+            require(!staked[i], "Unstake tokenId it to transfer");
+    }
+
+    // stake / unstake nfts
+    function stakeNfts(uint[] calldata _tokenIds, bool _stake) external onlyWhitelisted {
+        for (uint256 i = 0; i < _tokenIds.length; i++)
+            staked[_tokenIds[i]] = _stake;
+    }
+
     /*
     @function setAirDropStatus(value)
     @description - Sets the status of airdrop to true/false
